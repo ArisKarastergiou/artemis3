@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# generated with {{ generator_script }} on {{ generator_datetime }}
+
+rspctl --bitmode={{ bitmode }}
+
+/opt/lofar/bin/beamctl --antennaset={{ antennaset }} --rcus={{ rcus }} --band={{ band }} --beamlets={{ beamlets }} --subbands={{ subbands}} --anadir={{ anadir }} --digdir={{ digdir }} &
+

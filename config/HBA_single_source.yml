@@ -1,0 +1,44 @@
+# ARTEMIS3 configuration for observing a single source with 488 beamlets using the HBA in 8-bit mode
+
+obs_mode: HBA_single_source # unique string to label observation mode
+
+beamctl:
+    bitmode: 8
+    antennaset: HBA_JOINED
+    rcus: '0:191'
+    band: '110_190'
+    beamlets: '0:487'
+    subbands: '12:499'
+
+LuMP:
+    LuMPPath: /home/artemis/lump/lump/bin
+    
+    station_name: UK608
+    data_type_in: L_intComplex16_t # 8-bit mode, 488 beamlets, 122 beamlets per lane
+    beamlets_per_lane: 122
+    clock_speed: 200
+    rcumode_array: '[5]*122'
+    
+    lane:
+      - id: 1
+        physical_beamlet_array: '[0:122]'
+        subband_array: '[111:133]'
+        port: 16080 # lane 1, UK608 specific
+    
+      - id: 2
+        physical_beamlet_array: '[122:244]'
+        subband_array: '[133:255]'
+        port: 16081 # lane 2, UK608 specific
+    
+      - id: 3
+        physical_beamlet_array: '[244:366]'
+        subband_array: '[255:377]'
+        port: 16082 # lane 3, UK608 specific
+    
+      - id: 4
+        physical_beamlet_array: '[366:488]'
+        subband_array: '[377:499]'
+        port: 16083 # lane 4, UK608 specific
+    
+    writer_type: LuMP1
+    recorder_num_cores: 2

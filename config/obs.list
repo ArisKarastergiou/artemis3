@@ -1,0 +1,37 @@
+# observation list
+# pulsar_name duration(seconds) obs_mode
+#   OR
+# ra(degrees) dec(degrees) duration(seconds) obs_mode
+J0034-0534 3600 HBA_single_source
+B0105+65 3600 HBA_single_source
+B0138+59 3600 HBA_single_source
+B0329+54 1800 HBA_single_source
+B0355+54 1800 HBA_single_source
+B0531+21 1800 HBA_single_source
+B0611+22 3600 HBA_single_source
+B0809+74 1800 HBA_single_source
+B0834+06 1800 HBA_single_source
+B0919+06 3600 HBA_single_source
+B0950+08 1800 HBA_single_source
+B0943+10 3600 HBA_single_source
+J1012+5307 3600 HBA_single_source
+J1022+1001 3600 HBA_single_source
+B1133+16 900 HBA_single_source
+B1237+25 1800 HBA_single_source
+B1508+55 1800 HBA_single_source
+B1540-06 3600 HBA_single_source
+B1642-03 1800 HBA_single_source
+B1822-09 3600 HBA_single_source
+B1859+07 3600 HBA_single_source
+B1922+20 3600 HBA_single_source
+B1929+10 1800 HBA_single_source
+B1931+24 3600 HBA_single_source
+B1933+16 1800 HBA_single_source
+B1957+20 3600 HBA_single_source
+B2016+28 1800 HBA_single_source
+B2020+28 1800 HBA_single_source
+J2145-0750 3600 HBA_single_source
+B2224+65 3600 HBA_single_source
+B2217+47 3600 HBA_single_source
+B2306+55 3600 HBA_single_source
+B2310+42 3600 HBA_single_source
