@@ -11,10 +11,21 @@
 #!/usr/bin/env python3
 import astropy.time
 import astropy.coordinates
+import subprocess
+from astropy.utils.data import conf
 
+def getsourcepos(sourceName):
+    result = subprocess.run('/data/Code/psrcat/psrcat -o short -nonumber -nohead -c \'JNAME RAJD DECJD\' %s'%(sourceName), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        print('Error: there is an issue with psrcat, prehaps it is not in the PATH')
+        return None
+    srcStr = result.stdout.decode('utf-8').strip().split()
+    rajd = float(srcStr[1])
+    decjd = float(srcStr[2])
+    pos = astropy.coordinates.SkyCoord(rajd,decjd,unit='deg')
+    return pos
 import numpy as np
 from numpy.core.defchararray import add
-
 
 def getlst(t, source):
     lst = t.sidereal_time('mean')
@@ -22,7 +33,9 @@ def getlst(t, source):
     print('Observatory:', t.location.to_geodetic())
     print('UTC: ', t)
     print('LST: ', lst)
-    apsource = astropy.coordinates.SkyCoord.from_name(source)
+#    with conf.set_temp('remote_timeout', 30):
+#        apsource = astropy.coordinates.SkyCoord.from_name(source)
+    apsource = getsourcepos(source.strip('PSR '))
 #    print (apsource.ra.hour)
     sourcealtaz = apsource.transform_to(astropy.coordinates.AltAz(obstime=t,location=t.location))
 #    print("Elevation = {0.alt:.2}".format(sourcealtaz))
@@ -37,16 +50,21 @@ def sourcelist(filename):
 
 def findfirstsource(source, lst, startoffset):
     positiveminoffset = 24
+    index = -1
     for i in range(len(source)): 
-        offset = astropy.coordinates.SkyCoord.from_name(source[i]).ra.hour + startoffset - lst.hour 
-#        print (np.mod(offset,24.), source[i])
+#        with conf.set_temp('remote_timeout', 30):
+#            offset = astropy.coordinates.SkyCoord.from_name(source[i]).ra.hour + startoffset - lst.hour 
+        apsource = getsourcepos(source[i].strip('PSR '))
+        offset = apsource.ra.hour + startoffset - lst.hour 
         if offset > 0 and np.mod(offset,24.) < positiveminoffset:
             positiveminoffset = np.mod(offset,24.)
             index = i
     return index
 
 def issourceup(source, t):
-    apsource = astropy.coordinates.SkyCoord.from_name(source)
+#    with conf.set_temp('remote_timeout', 30):
+#        apsource = astropy.coordinates.SkyCoord.from_name(source)
+    apsource = getsourcepos(source.strip('PSR '))
     sourcealtaz = apsource.transform_to(astropy.coordinates.AltAz(obstime=t,location=t.location))
     if sourcealtaz.alt.deg > 20.0:
 #        print (source," is up at ", sourcealtaz.alt.deg) 
@@ -64,6 +82,7 @@ if __name__== "__main__":
     parser.add_argument('-s', '--startdate', help='Start date of observations, e.g. 2019-04-16 10:18:59.685907', required='true')
     parser.add_argument('-e', '--enddate', help='Start date of observations, e.g. 2019-04-16 10:18:59.685907', required='true')
     parser.add_argument('-f', '--filename', help='Catalogue of sources and durations', required='true')
+    parser.add_argument('-so', '--strictorder', help='keeps order specified in source file', action='store_true')
     home = '/data/Code/Git/Artemis3/'
     args = parser.parse_args()
     now = astropy.time.Time.now()
@@ -84,8 +103,11 @@ if __name__== "__main__":
     psrnames = add('PSR ',sources)
 #    print (psrnames, durations)
     lst = getlst(tstart, psrnames[0])
-# Find first source
-    index = findfirstsource(psrnames, lst, 3) # the last argument is in hours, to be subtracted from the LST to find the first source
+    # Find first source
+    if args.strictorder:
+        index = 0
+    else:
+        index = findfirstsource(psrnames, lst, 3) # the last argument is in hours, to be subtracted from the LST to find the first source
     rotated_psrnames = np.roll(psrnames, -index)
     rotated_durations = np.roll(durations, -index)
 #    print (rotated_psrnames)
@@ -108,7 +130,7 @@ if __name__== "__main__":
             #write script
             utc = currenttime
             utc.format='fits'
-            utcstart=utc.value+'Z'
+            utcstart=utc.value[:-4]+'Z'
             print (i, ". Writing script files for ", rotated_psrnames[i], utcstart, currenttime.sidereal_time('mean'))
             script.append(home+"scripts/generateObsScripts.py -o "+home+"config/HBA_single_source.yml -s "+home+"config/sources/"+rotated_psrnames[i].strip('PSR ')+".yml -d "+utcstart+" --duration "+str(rotated_durations[i]))
             currenttime += dt + deadtime

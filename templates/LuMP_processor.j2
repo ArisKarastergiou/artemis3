@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# generated with {{ generator_script }} on {{ generator_datetime }}
+
+#{{ LuMPPath }}/LuMP_Pulsar_Cleanup.py --source_name={{ sourcename }} --source_RA={{ source_RA }} --source_Dec={{ source_Dec }} --telescope={{ station_name }} --filename_base={{ filename_base }}.00 --datadir={{ datadir }}
+LuMP_Pulsar_Cleanup.py --source_name={{ sourcename }} --source_RA={{ source_RA }} --source_Dec={{ source_Dec }} --telescope={{ station_name }} --filename_base={{ filename_base }}.00 --datadir=./
+mkdir {{ dspsr_out }}
+dspsr -F 122:D -L 10 -U 2048 -a PSRFITS -minram 1 -S 1 -t 40 -k UK608 -E $TEMPO/tzpar/{{ ephemeris }} -O {{ dspsr_out }}/{{ filename_base }} {{ filename_base }}.00.raw

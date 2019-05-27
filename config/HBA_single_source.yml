@@ -22,7 +22,7 @@ LuMP:
     lane:
       - id: 1
         physical_beamlet_array: '[0:122]'
-        subband_array: '[111:133]'
+        subband_array: '[11:133]'
         port: 16080 # lane 1, UK608 specific
     
       - id: 2

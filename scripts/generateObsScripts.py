@@ -9,7 +9,9 @@ import numpy as np
 # HARDCODE
 LUMPTEMPLATE = 'LuMP_recorder.j2'
 LCUTEMPLATE = 'beamctl.j2'
+LUMPPROCESS = 'LuMP_processor.j2'
 DATADIRROOT = '/local_data/ARTEMIS/'
+SCRIPTDIR = '/data/Commissioning/PSRMonitor/Artemis3/'
 
 if __name__== "__main__":
     import argparse
@@ -40,29 +42,39 @@ if __name__== "__main__":
     arrayMode = obsConfigDict['beamctl']['antennaset'].split('_')[0]
     decRad = srcConfigDict['DECJD'] * np.pi / 180.
     raRad = srcConfigDict['RAJD'] * np.pi / 180.
-    dirStr = '%f.6,%f.6,J2000'%(raRad,decRad)
+    dirStr = '%0.6f,%0.6f,J2000'%(raRad,decRad)
 
     # Generate LuMP scripts
     lumpDict = obsConfigDict['LuMP']
-
+    if not (args.start_date is None):
+        lumpDict['opt_arg'] = '--start_date=%s'%args.start_date
+    year = int(args.start_date[0:4])
+    month = int(args.start_date[5:7])
+    day = int(args.start_date[8:10])
+    hour = int(args.start_date[11:13])
+    minute = int(args.start_date[14:16])
     lumpDict['generator_script'] = os.path.basename(__file__)
     lumpDict['generator_datetime'] = generatorStartTime
     lumpDict['anadir'] = dirStr
     lumpDict['digdir'] = dirStr
     lumpDict['duration'] = args.duration
     lumpDict['datadir'] = DATADIRROOT + '%s_%s'%(dataPath, srcConfigDict['NAME'])
-
-    if not (args.start_date is None):
-        lumpDict['opt_arg'] = '--start_date=%s'%args.start_date
-    
+    lumpDict['sourcename'] =  srcConfigDict['NAME']
+    lumpDict['ephemeris'] =  srcConfigDict['NAME'][1:]+'.par'
+    lumpDict['source_RA'] = srcConfigDict['RAJ']
+    lumpDict['source_Dec'] = srcConfigDict['DecJ']
+    lumpDict['dspsr_out'] = '/oxford_data2/PSRMonitor/data/' + srcConfigDict['NAME'] +'/' + args.start_date[0:4] + args.start_date[5:7] + args.start_date[8:10]
+    print (lumpDict['dspsr_out'])
     # build a config dict for each lane
     configBase = lumpDict.copy()
     configBase.pop('lane', None)
 
     configBase['sourcename_array'] = '[%s]*%i'%(srcConfigDict['NAME'], lumpDict['beamlets_per_lane'])
-    configBase['rightascension_array'] = '[%f.6]*%i'%(raRad, lumpDict['beamlets_per_lane'])
-    configBase['declination_array'] = '[%f.6]*%i'%(decRad, lumpDict['beamlets_per_lane'])
+    configBase['rightascension_array'] = '[%0.6f]*%i'%(raRad, lumpDict['beamlets_per_lane'])
+    configBase['declination_array'] = '[%0.6f]*%i'%(decRad, lumpDict['beamlets_per_lane'])
     configBase['epoch_array'] = '[J2000]*%i'%(lumpDict['beamlets_per_lane'])
+    obstime = datetime.datetime(year,month,day, hour,minute)
+    attime = obstime - datetime.timedelta(minutes=1)
     
     for lane in lumpDict['lane']:
         configLane = {**configBase, **lane}
@@ -72,15 +84,36 @@ if __name__== "__main__":
         env = Environment(loader = FileSystemLoader(args.templateDir), trim_blocks=True, lstrip_blocks=True)
         templateLuMP = env.get_template(LUMPTEMPLATE)
         renderText = templateLuMP.render(configLane)
+        templateLuMPProc = env.get_template(LUMPPROCESS)
+        renderTextProc = templateLuMPProc.render(configLane)
         
         if args.verbose: print(renderText)
 
-        outputFn = '%s_%s_lane%i.sh'%(srcConfigDict['NAME'], arrayMode, lane['id'])
-
+        outputFn = SCRIPTDIR + '%s_%s_lane%i.sh'%(srcConfigDict['NAME'], arrayMode, lane['id'])
+        outputFnProc = SCRIPTDIR + '%s_%s_lane%i_Proc.sh'%(srcConfigDict['NAME'], arrayMode, lane['id'])
+        if lane['id'] < 3:
+            adagio = 'adagio1'
+        else:
+            adagio = 'adagio2'
+            
+        startdate = attime.strftime('%H:%M %m/%d/%Y')
+        atstring = 'echo \"ssh %s \'bash -ix \' < %s \" |at %s \n' %(adagio,outputFn, startdate)
+        if os.path.exists('atscript.exe'):
+            append_write = 'a' # append if already exists
+        else:
+            append_write = 'w' # make a new file if not
+        fh2 = open('atscript.exe',append_write)
+        fh2.write(atstring)
+        fh2.close()
         if not args.dry_run:
             print('Writing ' + outputFn)
             fh = open(outputFn,'w')
             fh.write(renderText)
+            fh.close()
+        if not args.dry_run:
+            print('Writing ' + outputFnProc)
+            fh = open(outputFnProc,'w')
+            fh.write(renderTextProc)
             fh.close()
 
     # Generate LCU script
@@ -96,7 +129,11 @@ if __name__== "__main__":
     
     if args.verbose: print(renderText)
 
-    outputFn = '%s_%s_LCU.sh'%(srcConfigDict['NAME'], arrayMode)
+    outputFn = SCRIPTDIR + '%s_%s_LCU.sh'%(srcConfigDict['NAME'], arrayMode)
+    atstring = 'echo \"ssh lcu \'bash -ix \' < %s \" |at %s \n' %(outputFn, startdate)
+    fh2 = open('atscript.exe',append_write)
+    fh2.write(atstring)
+    fh2.close()
     if not args.dry_run:
         print('Writing ' + outputFn)
         fh = open(outputFn,'w')

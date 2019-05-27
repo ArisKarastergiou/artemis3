@@ -12,7 +12,7 @@ def dictFromPsrcat(sourceName):
 
     returns: dict
     """
-    result = subprocess.run('%s -nonumber -nohead -c \'JNAME RAJD DECJD P0 P1 W50 S1400 DM\' %s'%(PSRCATBIN, sourceName), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run('%s -nonumber -nohead -c \'JNAME RAJD DECJD P0 P1 W50 S1400 DM RAJ DECJ\' %s'%(PSRCATBIN, sourceName), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print('Error: there is an issue with psrcat, prehaps it is not in the PATH')
         return None
@@ -35,6 +35,17 @@ def dictFromPsrcat(sourceName):
     except ValueError:
         print('WARNING: DECJD missing')
         srcDECJD = None
+    try:
+        srcRAJ = srcList[19]
+    except ValueError:
+        print('WARNING: RAJ missing')
+        srcRAJ = None
+
+    try:
+        srcDECJ = srcList[22]
+    except ValueError:
+        print('WARNING: DECJD missing')
+        srcDECJ = None
 
     try:
         srcP0 = float(srcList[4])
@@ -70,6 +81,8 @@ def dictFromPsrcat(sourceName):
             'NAME'   : sourceName,
             'RAJD'   : srcRAJD,
             'DECJD'  : srcDECJD,
+            'RAJ'    : srcList[19],
+            'DecJ'   : srcList[22],
             'SOURCE_PARAM' : {
                 'JNAME'  : srcList[0],
                 'P0'     : srcP0,
